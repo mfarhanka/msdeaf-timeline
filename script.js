@@ -8,6 +8,7 @@
   const apiBase = document.body.dataset.apiBase || 'api/';
   const hasAdminUi = Boolean(document.getElementById('admin-auth-gate') || document.getElementById('admin-console-protected'));
   const isAdminPage = document.body.classList.contains('admin-page-body');
+  const adminProtectedSections = Array.from(document.querySelectorAll('[data-admin-protected]'));
 
   const API = {
     timeline: apiBase + 'timeline.php',
@@ -136,14 +137,21 @@
   }
 
   function setAdminConsoleOpen(isOpen) {
-    if (!adminToggle || !adminPanel) {
+    if (!adminPanel) {
       return;
     }
 
     if (!state.isAdminAuthenticated) {
       adminPanel.hidden = true;
-      adminToggle.setAttribute('aria-expanded', 'false');
-      adminToggle.textContent = 'Open Admin Console';
+      if (adminToggle) {
+        adminToggle.setAttribute('aria-expanded', 'false');
+        adminToggle.textContent = 'Open Admin Console';
+      }
+      return;
+    }
+
+    if (isAdminPage || !adminToggle) {
+      adminPanel.hidden = false;
       return;
     }
 
@@ -157,9 +165,9 @@
       adminAuthGate.hidden = state.isAdminAuthenticated;
     }
 
-    if (adminProtected) {
-      adminProtected.hidden = !state.isAdminAuthenticated;
-    }
+    adminProtectedSections.forEach(function (section) {
+      section.hidden = !state.isAdminAuthenticated;
+    });
 
     if (!state.isAdminAuthenticated) {
       setAdminConsoleOpen(false);

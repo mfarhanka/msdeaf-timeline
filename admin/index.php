@@ -24,6 +24,12 @@
         <a class="admin-sidebar-link" href="../setup_database.php">DB Setup</a>
         <a class="admin-sidebar-link admin-sidebar-link-accent" href="../index.html">View Public Timeline</a>
       </nav>
+
+      <div class="admin-sidebar-session" data-admin-protected hidden>
+        <p class="admin-sidebar-session-label">Session</p>
+        <p class="admin-sidebar-session-note">The admin workspace is unlocked for this session.</p>
+        <button class="admin-console-action danger admin-sidebar-lock" id="admin-logout-button" type="button">Lock Console</button>
+      </div>
     </aside>
 
     <section class="admin-dashboard-content">
@@ -45,20 +51,8 @@
           <p class="admin-auth-status" id="admin-auth-status" aria-live="polite">Admin tools are locked.</p>
         </div>
 
-        <div class="admin-console-protected" id="admin-console-protected" hidden>
-          <div class="admin-console-bar">
-            <div>
-              <p class="admin-console-kicker">Admin Console</p>
-              <h2 class="admin-console-title">Manage Timeline Events</h2>
-              <p class="admin-console-note">Changes on this page are saved to MySQL. Export JSON only if you want a backup copy.</p>
-            </div>
-            <div class="admin-console-bar-actions">
-              <button class="admin-console-toggle" id="admin-console-toggle" type="button" aria-expanded="false" aria-controls="admin-console-panel">Open Admin Console</button>
-              <button class="admin-console-action danger" id="admin-logout-button" type="button">Lock Console</button>
-            </div>
-          </div>
-
-          <div class="admin-console-panel" id="admin-console-panel" hidden>
+        <div class="admin-console-protected" id="admin-console-protected" data-admin-protected hidden>
+          <div class="admin-console-panel" id="admin-console-panel">
             <div class="admin-console-toolbar">
               <p class="admin-console-status" id="admin-console-status" aria-live="polite">Connected to the server timeline.</p>
               <div class="admin-console-actions">
