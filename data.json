@@ -1,0 +1,133 @@
+{
+  "title": "Malaysian Deaf Sports History",
+  "subtitle": "A journey through the milestones of deaf sports in Malaysia",
+  "organization": "Malaysian Deaf Sports Association (MSDeaf)",
+  "events": [
+    {
+      "id": 1,
+      "year": "1963",
+      "date": "1963",
+      "title": "Formation of Malaysian Deaf Sports Association",
+      "description": "The Malaysian Deaf Sports Association (MSDeaf) was established to promote and develop sports among the deaf community in Malaysia, laying the foundation for organized deaf sports in the country.",
+      "image": "images/1963-formation.jpg",
+      "imageAlt": "Formation of MSDeaf in 1963"
+    },
+    {
+      "id": 2,
+      "year": "1965",
+      "date": "1965",
+      "title": "First National Deaf Sports Championship",
+      "description": "Malaysia hosted its first National Deaf Sports Championship, bringing together deaf athletes from across the country to compete in athletics, swimming, and team sports.",
+      "image": "images/1965-championship.jpg",
+      "imageAlt": "First National Deaf Sports Championship 1965"
+    },
+    {
+      "id": 3,
+      "year": "1969",
+      "date": "1969",
+      "title": "Malaysia Joins the World Federation of the Deaf",
+      "description": "Malaysia officially became a member of the World Federation of the Deaf (WFD), opening doors for Malaysian deaf athletes to participate in international competitions.",
+      "image": "images/1969-wfd.jpg",
+      "imageAlt": "Malaysia joins World Federation of the Deaf"
+    },
+    {
+      "id": 4,
+      "year": "1977",
+      "date": "August 1977",
+      "title": "First Malaysian Deaflympics Participation",
+      "description": "Malaysian deaf athletes made their debut at the Deaflympics (formerly known as the World Games for the Deaf), representing Malaysia on the world stage for the first time.",
+      "image": "images/1977-deaflympics.jpg",
+      "imageAlt": "Malaysia's first Deaflympics participation in 1977"
+    },
+    {
+      "id": 5,
+      "year": "1985",
+      "date": "1985",
+      "title": "Badminton Team Wins ASEAN Deaf Games Gold",
+      "description": "The Malaysian deaf badminton team clinched gold at the ASEAN Deaf Games, marking a historic achievement and putting Malaysian deaf sports on the regional map.",
+      "image": "images/1985-badminton.jpg",
+      "imageAlt": "Malaysia Deaf Badminton Team wins Gold at ASEAN Deaf Games 1985"
+    },
+    {
+      "id": 6,
+      "year": "1991",
+      "date": "1991",
+      "title": "Hosting of 1st ASEAN Deaf Games",
+      "description": "Malaysia proudly hosted the inaugural ASEAN Deaf Games in Kuala Lumpur, welcoming deaf athletes from across Southeast Asia and showcasing the nation's commitment to deaf sports.",
+      "image": "images/1991-asean-games.jpg",
+      "imageAlt": "1st ASEAN Deaf Games hosted in Malaysia 1991"
+    },
+    {
+      "id": 7,
+      "year": "1997",
+      "date": "1997",
+      "title": "Malaysian Deaf Futsal Team Established",
+      "description": "The Malaysian Deaf Futsal Team was officially formed, expanding the range of sports under MSDeaf and creating new opportunities for deaf athletes to compete nationally and internationally.",
+      "image": "images/1997-futsal.jpg",
+      "imageAlt": "Malaysian Deaf Futsal Team established in 1997"
+    },
+    {
+      "id": 8,
+      "year": "2001",
+      "date": "2001",
+      "title": "National Deaf Sports Complex Inaugurated",
+      "description": "A dedicated sports facility for the deaf community was inaugurated, providing a permanent training ground and venue for national deaf sports events.",
+      "image": "images/2001-complex.jpg",
+      "imageAlt": "National Deaf Sports Complex inaugurated in 2001"
+    },
+    {
+      "id": 9,
+      "year": "2005",
+      "date": "2005",
+      "title": "Historic Deaflympics Medal",
+      "description": "Malaysian athletes brought home medals from the Deaflympics, a landmark achievement that raised the profile of deaf sports in Malaysia and inspired a new generation of deaf athletes.",
+      "image": "images/2005-medal.jpg",
+      "imageAlt": "Historic Deaflympics medal for Malaysia in 2005"
+    },
+    {
+      "id": 10,
+      "year": "2010",
+      "date": "2010",
+      "title": "Youth Deaf Sports Programme Launched",
+      "description": "MSDeaf launched a nationwide Youth Deaf Sports Programme to identify and nurture young deaf talent, strengthening the pipeline for future national deaf athletes.",
+      "image": "images/2010-youth.jpg",
+      "imageAlt": "Youth Deaf Sports Programme launched in 2010"
+    },
+    {
+      "id": 11,
+      "year": "2013",
+      "date": "2013",
+      "title": "MSDeaf Golden Jubilee Celebration",
+      "description": "The Malaysian Deaf Sports Association celebrated its 50th anniversary with a grand ceremony, commemorating five decades of promoting deaf sports and honouring the contributions of athletes, coaches, and volunteers.",
+      "image": "images/2013-jubilee.jpg",
+      "imageAlt": "MSDeaf Golden Jubilee Celebration 2013"
+    },
+    {
+      "id": 12,
+      "year": "2017",
+      "date": "2017",
+      "title": "Malaysia Hosts Asia Pacific Deaf Games",
+      "description": "Malaysia hosted the Asia Pacific Deaf Games, bringing together deaf athletes from across the Asia Pacific region and reaffirming Malaysia's role as a leader in deaf sports development.",
+      "image": "images/2017-apd-games.jpg",
+      "imageAlt": "Malaysia hosts Asia Pacific Deaf Games 2017"
+    },
+    {
+      "id": 13,
+      "year": "2021",
+      "date": "2021",
+      "title": "Virtual Deaf Sports Championships",
+      "description": "In response to global challenges, MSDeaf organised virtual deaf sports championships, embracing technology to keep the deaf sports community connected and competitive.",
+      "image": "images/2021-virtual.jpg",
+      "imageAlt": "Virtual Deaf Sports Championships 2021"
+    },
+    {
+      "id": 14,
+      "year": "2024",
+      "date": "2024",
+      "title": "New Generation of Deaf Champions",
+      "description": "A new generation of Malaysian deaf athletes emerged, breaking national records and qualifying for international competitions, carrying forward the proud legacy of Malaysian deaf sports.",
+      "image": "images/2024-champions.jpg",
+      "imageAlt": "New generation of Malaysian Deaf Champions 2024"
+    }
+  ]
+}
