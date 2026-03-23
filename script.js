@@ -12,6 +12,7 @@
   }
 
   const container = document.getElementById('timeline-container');
+  const yearNav = document.getElementById('timeline-year-nav');
   const desktopBreakpoint = window.matchMedia('(max-width: 700px)');
 
   /**
@@ -24,6 +25,7 @@
     const item = document.createElement('div');
     item.classList.add('timeline-item');
     item.classList.add(side);
+    item.id = 'timeline-year-' + String(event.year).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 
     // Card
     const card = document.createElement('div');
@@ -69,6 +71,38 @@
     card.appendChild(body);
     item.appendChild(card);
     return item;
+  }
+
+  /**
+   * Build year jump buttons from timeline events.
+   * @param {Array<Object>} events
+   */
+  function buildYearNavigation(events) {
+    if (!yearNav) {
+      return;
+    }
+
+    yearNav.innerHTML = '';
+
+    events.forEach(function (event) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.classList.add('year-jump-button');
+      button.textContent = event.year;
+      button.setAttribute('aria-label', 'Jump to ' + event.year);
+
+      button.addEventListener('click', function () {
+        const target = document.getElementById(
+          'timeline-year-' + String(event.year).replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+        );
+
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+
+      yearNav.appendChild(button);
+    });
   }
 
   /**
@@ -200,6 +234,8 @@
           container.innerHTML = '<p class="timeline-error">No events found.</p>';
           return;
         }
+
+        buildYearNavigation(data.events);
 
         // Alternate sides, but allow CSS to offset right-side cards slightly upward.
         data.events.forEach(function (event, index) {
