@@ -5,11 +5,19 @@
 (function () {
   'use strict';
 
-  const AUTH_SESSION_KEY = 'msdeaf-admin-authenticated';
-  const ADMIN_PASSWORD_HASH = '3b30ca4667e2ae209bc206f169da59c5fdf4141f0ee079539c979894d8aae74e';
-  const STORAGE_KEY = 'msdeaf-timeline-events';
+  const API = {
+    timeline: 'api/timeline.php',
+    adminStatus: 'api/admin-status.php',
+    adminLogin: 'api/admin-login.php',
+    adminLogout: 'api/admin-logout.php',
+    adminSave: 'api/admin-save.php',
+    adminReset: 'api/admin-reset.php'
+  };
 
   const footerYear = document.getElementById('footer-year');
+  const siteTitle = document.querySelector('.site-title');
+  const siteSubtitle = document.querySelector('.site-subtitle');
+  const poweredByName = document.querySelector('.powered-by strong');
   const container = document.getElementById('timeline-container');
   const yearNav = document.getElementById('timeline-year-nav');
   const adminAuthGate = document.getElementById('admin-auth-gate');
@@ -35,14 +43,14 @@
 
   const state = {
     meta: {
-      title: document.querySelector('.site-title') ? document.querySelector('.site-title').textContent : 'Malaysian Deaf Sports History',
-      subtitle: document.querySelector('.site-subtitle') ? document.querySelector('.site-subtitle').textContent : '',
-      organization: document.querySelector('.powered-by strong') ? document.querySelector('.powered-by strong').textContent : 'MSDeaf'
+      title: siteTitle ? siteTitle.textContent : 'Malaysian Deaf Sports History',
+      subtitle: siteSubtitle ? siteSubtitle.textContent : '',
+      organization: poweredByName ? poweredByName.textContent : 'Malaysian Deaf Sports Association (MSDeaf)'
     },
-    defaultEvents: [],
     events: [],
     editingEventId: null,
-    isAdminAuthenticated: false
+    isAdminAuthenticated: false,
+    authUsername: null
   };
 
   if (footerYear) {
@@ -74,48 +82,35 @@
   }
 
   function cloneEvents(events) {
-    return events.map(function (event, index) {
+    return (events || []).map(function (event, index) {
       return normalizeEvent(event, index);
     });
   }
 
-  function loadStoredEvents() {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        return null;
+  async function apiFetch(url, options) {
+    const response = await fetch(url, Object.assign({
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json'
       }
+    }, options || {}));
 
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        return null;
-      }
+    let data = null;
 
-      return cloneEvents(parsed);
-    } catch (error) {
-      console.warn('MSDeaf Timeline: could not read stored events.', error);
-      return null;
-    }
-  }
-
-  function loadAdminSession() {
     try {
-      return window.sessionStorage.getItem(AUTH_SESSION_KEY) === 'true';
+      data = await response.json();
     } catch (error) {
-      return false;
+      data = null;
     }
-  }
 
-  function persistAdminSession(isAuthenticated) {
-    try {
-      if (isAuthenticated) {
-        window.sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
-      } else {
-        window.sessionStorage.removeItem(AUTH_SESSION_KEY);
-      }
-    } catch (error) {
-      console.warn('MSDeaf Timeline: could not persist admin session.', error);
+    if (!response.ok) {
+      const message = data && data.message ? data.message : 'Request failed.';
+      const requestError = new Error(message);
+      requestError.status = response.status;
+      throw requestError;
     }
+
+    return data;
   }
 
   function setAdminAuthStatus(message, tone) {
@@ -125,23 +120,6 @@
 
     adminAuthStatus.textContent = message;
     adminAuthStatus.dataset.tone = tone || 'neutral';
-  }
-
-  function persistEvents() {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
-    } catch (error) {
-      console.warn('MSDeaf Timeline: could not save events.', error);
-      setAdminStatus('Changes could not be saved in this browser.', 'error');
-    }
-  }
-
-  function clearStoredEvents() {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.warn('MSDeaf Timeline: could not clear stored events.', error);
-    }
   }
 
   function setAdminStatus(message, tone) {
@@ -188,14 +166,6 @@
     }
   }
 
-  async function sha256(value) {
-    const encoded = new TextEncoder().encode(value);
-    const buffer = await window.crypto.subtle.digest('SHA-256', encoded);
-    return Array.from(new Uint8Array(buffer)).map(function (byte) {
-      return byte.toString(16).padStart(2, '0');
-    }).join('');
-  }
-
   function resetAdminForm() {
     if (!adminForm) {
       return;
@@ -227,6 +197,29 @@
     adminSaveButton.textContent = 'Update Event';
     adminCancelEditButton.hidden = false;
     setAdminConsoleOpen(true);
+  }
+
+  function applyTimelinePayload(payload) {
+    state.meta = {
+      title: payload && payload.title ? payload.title : 'Malaysian Deaf Sports History',
+      subtitle: payload && payload.subtitle ? payload.subtitle : '',
+      organization: payload && payload.organization ? payload.organization : 'Malaysian Deaf Sports Association (MSDeaf)'
+    };
+    state.events = cloneEvents(payload && payload.events ? payload.events : []);
+
+    if (siteTitle) {
+      siteTitle.textContent = state.meta.title;
+    }
+
+    if (siteSubtitle) {
+      siteSubtitle.textContent = state.meta.subtitle;
+    }
+
+    if (poweredByName) {
+      poweredByName.textContent = state.meta.organization;
+    }
+
+    document.title = state.meta.title + ' | MSDeaf Timeline';
   }
 
   function createPlaceholder(year) {
@@ -263,7 +256,6 @@
         requestAnimationFrame(layoutTimeline);
       });
       img.onerror = function () {
-        console.warn('MSDeaf Timeline: image not found — ' + event.image);
         this.replaceWith(createPlaceholder(event.year));
         requestAnimationFrame(layoutTimeline);
       };
@@ -317,7 +309,6 @@
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
-
       yearNav.appendChild(button);
     });
   }
@@ -361,40 +352,24 @@
       const actions = document.createElement('div');
       actions.classList.add('admin-event-actions');
 
-      const editButton = document.createElement('button');
-      editButton.type = 'button';
-      editButton.classList.add('admin-list-button');
-      editButton.dataset.action = 'edit';
-      editButton.dataset.eventId = event.id;
-      editButton.textContent = 'Edit';
-
-      const moveUpButton = document.createElement('button');
-      moveUpButton.type = 'button';
-      moveUpButton.classList.add('admin-list-button', 'secondary');
-      moveUpButton.dataset.action = 'move-up';
-      moveUpButton.dataset.eventId = event.id;
-      moveUpButton.textContent = 'Move Up';
-      moveUpButton.disabled = index === 0;
-
-      const moveDownButton = document.createElement('button');
-      moveDownButton.type = 'button';
-      moveDownButton.classList.add('admin-list-button', 'secondary');
-      moveDownButton.dataset.action = 'move-down';
-      moveDownButton.dataset.eventId = event.id;
-      moveDownButton.textContent = 'Move Down';
-      moveDownButton.disabled = index === state.events.length - 1;
-
-      const deleteButton = document.createElement('button');
-      deleteButton.type = 'button';
-      deleteButton.classList.add('admin-list-button', 'danger');
-      deleteButton.dataset.action = 'delete';
-      deleteButton.dataset.eventId = event.id;
-      deleteButton.textContent = 'Delete';
-
-      actions.appendChild(editButton);
-      actions.appendChild(moveUpButton);
-      actions.appendChild(moveDownButton);
-      actions.appendChild(deleteButton);
+      [
+        { action: 'edit', label: 'Edit', classes: '' },
+        { action: 'move-up', label: 'Move Up', classes: 'secondary', disabled: index === 0 },
+        { action: 'move-down', label: 'Move Down', classes: 'secondary', disabled: index === state.events.length - 1 },
+        { action: 'delete', label: 'Delete', classes: 'danger' }
+      ].forEach(function (actionConfig) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.classList.add('admin-list-button');
+        if (actionConfig.classes) {
+          button.classList.add(actionConfig.classes);
+        }
+        button.dataset.action = actionConfig.action;
+        button.dataset.eventId = event.id;
+        button.textContent = actionConfig.label;
+        button.disabled = Boolean(actionConfig.disabled);
+        actions.appendChild(button);
+      });
 
       card.appendChild(order);
       card.appendChild(meta);
@@ -481,7 +456,7 @@
 
     if (state.events.length === 0) {
       container.style.height = '';
-      container.innerHTML = '<p class="timeline-error">No events found. Add one from the admin console.</p>';
+      container.innerHTML = '<p class="timeline-error">No events found in the database. Run setup_database.php or add one from the admin console.</p>';
       return;
     }
 
@@ -500,10 +475,40 @@
     renderAdminEventList();
   }
 
-  function saveStateAndRender(message, tone) {
-    persistEvents();
-    renderApplication();
-    setAdminStatus(message, tone || 'success');
+  async function loadAdminStatus() {
+    try {
+      const response = await apiFetch(API.adminStatus);
+      state.isAdminAuthenticated = Boolean(response.authenticated);
+      state.authUsername = response.username || null;
+      applyAdminAccessState();
+
+      if (state.isAdminAuthenticated) {
+        setAdminAuthStatus('Admin console unlocked for ' + state.authUsername + '.', 'success');
+      } else {
+        setAdminAuthStatus('Admin tools are locked.', 'neutral');
+      }
+    } catch (error) {
+      state.isAdminAuthenticated = false;
+      state.authUsername = null;
+      applyAdminAccessState();
+      setAdminAuthStatus('Admin status could not be loaded.', 'error');
+    }
+  }
+
+  async function loadTimeline() {
+    container.innerHTML = '<p class="timeline-loading">Loading timeline…</p>';
+
+    try {
+      const payload = await apiFetch(API.timeline);
+      applyTimelinePayload(payload);
+      renderApplication();
+      resetAdminForm();
+      setAdminStatus('Connected to MySQL timeline data.', 'success');
+    } catch (error) {
+      container.style.height = '';
+      container.innerHTML = '<p class="timeline-error">Failed to load timeline from MySQL. Run setup_database.php and check your MySQL connection.</p>';
+      setAdminStatus(error.message || 'Timeline data could not be loaded.', 'error');
+    }
   }
 
   function generateEventId() {
@@ -531,27 +536,56 @@
     setAdminStatus('Exported the current timeline as JSON.', 'success');
   }
 
+  async function saveTimelineToServer(message) {
+    const response = await apiFetch(API.adminSave, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({
+        title: state.meta.title,
+        subtitle: state.meta.subtitle,
+        organization: state.meta.organization,
+        events: state.events
+      })
+    });
+
+    applyTimelinePayload(response.timeline);
+    renderApplication();
+    setAdminStatus(message || response.message || 'Timeline saved.', 'success');
+  }
+
   function initializeAdminEvents() {
-    state.isAdminAuthenticated = loadAdminSession();
     applyAdminAccessState();
 
     if (adminAuthForm) {
       adminAuthForm.addEventListener('submit', async function (submitEvent) {
         submitEvent.preventDefault();
 
-        const password = adminPasswordInput ? adminPasswordInput.value : '';
-        const passwordHash = await sha256(password);
+        try {
+          const response = await apiFetch(API.adminLogin, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify({
+              password: adminPasswordInput ? adminPasswordInput.value : ''
+            })
+          });
 
-        if (passwordHash !== ADMIN_PASSWORD_HASH) {
-          setAdminAuthStatus('Incorrect password. Admin tools remain locked.', 'error');
-          return;
+          state.isAdminAuthenticated = Boolean(response.authenticated);
+          state.authUsername = response.username || 'admin';
+          applyAdminAccessState();
+          setAdminAuthStatus('Admin console unlocked for ' + state.authUsername + '.', 'success');
+          setAdminStatus('Server session started. Admin changes now save to MySQL.', 'success');
+        } catch (error) {
+          state.isAdminAuthenticated = false;
+          state.authUsername = null;
+          applyAdminAccessState();
+          setAdminAuthStatus(error.message || 'Admin login failed.', 'error');
         }
-
-        state.isAdminAuthenticated = true;
-        persistAdminSession(true);
-        applyAdminAccessState();
-        setAdminAuthStatus('Admin console unlocked for this browser session.', 'success');
-        setAdminStatus('Admin console unlocked. Your timeline changes still save only in this browser.', 'success');
       });
     }
 
@@ -562,9 +596,17 @@
     }
 
     if (adminLogoutButton) {
-      adminLogoutButton.addEventListener('click', function () {
+      adminLogoutButton.addEventListener('click', async function () {
+        try {
+          await apiFetch(API.adminLogout, {
+            method: 'POST'
+          });
+        } catch (error) {
+          // Lock UI even if logout request fails on the server.
+        }
+
         state.isAdminAuthenticated = false;
-        persistAdminSession(false);
+        state.authUsername = null;
         applyAdminAccessState();
         setAdminAuthStatus('Admin tools are locked.', 'neutral');
       });
@@ -590,21 +632,28 @@
     }
 
     if (adminResetButton) {
-      adminResetButton.addEventListener('click', function () {
-        if (!window.confirm('Reset the timeline to the original data.json version for this browser?')) {
+      adminResetButton.addEventListener('click', async function () {
+        if (!window.confirm('Reset the timeline to the seeded data.json version in MySQL?')) {
           return;
         }
 
-        state.events = cloneEvents(state.defaultEvents);
-        clearStoredEvents();
-        resetAdminForm();
-        renderApplication();
-        setAdminStatus('Timeline reset to the default data.json content.', 'warning');
+        try {
+          const response = await apiFetch(API.adminReset, {
+            method: 'POST'
+          });
+
+          applyTimelinePayload(response.timeline);
+          renderApplication();
+          resetAdminForm();
+          setAdminStatus(response.message || 'Timeline reset successfully.', 'warning');
+        } catch (error) {
+          setAdminStatus(error.message || 'Reset failed.', 'error');
+        }
       });
     }
 
     if (adminForm) {
-      adminForm.addEventListener('submit', function (submitEvent) {
+      adminForm.addEventListener('submit', async function (submitEvent) {
         submitEvent.preventDefault();
 
         const formData = new FormData(adminForm);
@@ -623,26 +672,32 @@
           return;
         }
 
-        if (state.editingEventId) {
+        const isEditing = Boolean(state.editingEventId);
+
+        if (isEditing) {
           const existingIndex = state.events.findIndex(function (event) {
             return event.id === state.editingEventId;
           });
 
           if (existingIndex !== -1) {
             state.events.splice(existingIndex, 1, eventData);
-            saveStateAndRender('Event updated successfully.');
           }
         } else {
           state.events.push(eventData);
-          saveStateAndRender('Event added successfully.');
         }
 
-        resetAdminForm();
+        try {
+          await saveTimelineToServer(isEditing ? 'Event updated successfully in MySQL.' : 'Event added successfully to MySQL.');
+          resetAdminForm();
+        } catch (error) {
+          setAdminStatus(error.message || 'Save failed.', 'error');
+          await loadTimeline();
+        }
       });
     }
 
     if (adminEventList) {
-      adminEventList.addEventListener('click', function (clickEvent) {
+      adminEventList.addEventListener('click', async function (clickEvent) {
         const button = clickEvent.target.closest('button[data-action]');
         if (!button) {
           return;
@@ -673,88 +728,47 @@
           }
 
           state.events.splice(eventIndex, 1);
-          saveStateAndRender('Event deleted successfully.', 'warning');
+
+          try {
+            await saveTimelineToServer('Event deleted successfully from MySQL.');
+          } catch (error) {
+            setAdminStatus(error.message || 'Delete failed.', 'error');
+            await loadTimeline();
+          }
           return;
         }
 
         if (button.dataset.action === 'move-up' && eventIndex > 0) {
           const movedEvent = state.events.splice(eventIndex, 1)[0];
           state.events.splice(eventIndex - 1, 0, movedEvent);
-          saveStateAndRender('Event moved up.');
+
+          try {
+            await saveTimelineToServer('Event order updated in MySQL.');
+          } catch (error) {
+            setAdminStatus(error.message || 'Reorder failed.', 'error');
+            await loadTimeline();
+          }
           return;
         }
 
         if (button.dataset.action === 'move-down' && eventIndex < state.events.length - 1) {
           const movedEvent = state.events.splice(eventIndex, 1)[0];
           state.events.splice(eventIndex + 1, 0, movedEvent);
-          saveStateAndRender('Event moved down.');
+
+          try {
+            await saveTimelineToServer('Event order updated in MySQL.');
+          } catch (error) {
+            setAdminStatus(error.message || 'Reorder failed.', 'error');
+            await loadTimeline();
+          }
         }
       });
     }
   }
 
-  function initializeTimeline() {
-    container.innerHTML = '<p class="timeline-loading">Loading timeline…</p>';
-
-    fetch('data.json')
-      .then(function (response) {
-        if (!response.ok) {
-          throw new Error('Network response was not ok: ' + response.status);
-        }
-        return response.json();
-      })
-      .then(function (data) {
-        state.meta.title = data.title || state.meta.title;
-        state.meta.subtitle = data.subtitle || state.meta.subtitle;
-        state.meta.organization = data.organization || state.meta.organization;
-        state.defaultEvents = cloneEvents(Array.isArray(data.events) ? data.events : []);
-
-        const storedEvents = loadStoredEvents();
-        state.events = storedEvents && storedEvents.length ? storedEvents : cloneEvents(state.defaultEvents);
-
-        renderApplication();
-        resetAdminForm();
-
-        if (storedEvents && storedEvents.length) {
-          setAdminStatus('Loaded browser-saved timeline changes. Export JSON if you want to publish them.', 'warning');
-        } else {
-          setAdminStatus('Using data.json timeline. Changes you make here are saved only in this browser.', 'neutral');
-        }
-
-        if (!state.isAdminAuthenticated) {
-          setAdminAuthStatus('Admin tools are locked.', 'neutral');
-        } else {
-          setAdminAuthStatus('Admin console unlocked for this browser session.', 'success');
-        }
-      })
-      .catch(function (error) {
-        console.error('Timeline load error:', error);
-
-        const storedEvents = loadStoredEvents();
-        state.defaultEvents = [];
-        state.events = storedEvents && storedEvents.length ? storedEvents : [];
-
-        renderApplication();
-        resetAdminForm();
-
-        if (storedEvents && storedEvents.length) {
-          setAdminStatus('data.json could not be loaded. Using browser-saved timeline data instead.', 'warning');
-        } else {
-          setAdminStatus('data.json could not be loaded. You can still create events locally in this browser.', 'error');
-        }
-
-        if (!state.isAdminAuthenticated) {
-          setAdminAuthStatus('Admin tools are locked.', 'neutral');
-        } else {
-          setAdminAuthStatus('Admin console unlocked for this browser session.', 'success');
-        }
-      });
-  }
-
-  initializeAdminEvents();
-
   window.addEventListener('resize', layoutTimeline);
   window.addEventListener('load', layoutTimeline);
 
-  initializeTimeline();
+  initializeAdminEvents();
+  Promise.all([loadAdminStatus(), loadTimeline()]);
 })();
